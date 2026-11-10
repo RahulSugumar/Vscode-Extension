@@ -1,0 +1,13 @@
+.sessions-page {
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-text);
+}
+
+.sessions-page p {
+  margin: 0;
+  color: inherit;
+  font-size: 14px;
+}

@@ -1,0 +1,19 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+python-multipart
+python-dotenv
+streamlit
+requests
+langchain
+langchain-openai
+langgraph
+deepagents
+langfuse
+rich
+anthropic
+neo4j
+neo4j-graphrag
+sentence-transformers
+openai
+abkb[judge] @ git+https://github.com/Deloitte-DT-Training/kernel-kshastra.git@66dd91e33846c773aae2ebac9798ef3bb52dccf9

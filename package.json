@@ -1,0 +1,267 @@
+{
+  "name": "project-assistant",
+  "displayName": "Project Assistant",
+  "description": "Scan a workspace into an interactive code graph, chat with project context, and review agent-improvement policies from VS Code.",
+  "version": "0.2.1",
+  "publisher": "deloitte-dt-training",
+  "author": {
+    "name": "Deloitte DT Training"
+  },
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Deloitte-DT-Training/Extension_Code.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Deloitte-DT-Training/Extension_Code/issues"
+  },
+  "homepage": "https://github.com/Deloitte-DT-Training/Extension_Code#readme",
+  "keywords": [
+    "code graph",
+    "workspace assistant",
+    "project assistant",
+    "graphrag",
+    "rag",
+    "neo4j",
+    "agent improvement",
+    "ai assistant"
+  ],
+  "galleryBanner": {
+    "color": "#0B1220",
+    "theme": "dark"
+  },
+  "preview": true,
+  "pricing": "Free",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Visualization",
+    "Other"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Project Assistant scans workspace source files, starts a local Python backend, and writes graph artifacts in the opened workspace."
+    },
+    "virtualWorkspaces": false
+  },
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:selfEvolvingAgent.mainView",
+    "onCommand:selfEvolvingAgent.start",
+    "onCommand:selfEvolvingAgent.openFullEditor",
+    "onCommand:selfEvolvingAgent.generateGraph",
+    "onCommand:selfEvolvingAgent.debugReset"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "self-evolving-agent-sidebar",
+          "title": "Project Assistant",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "self-evolving-agent-sidebar": [
+        {
+          "type": "webview",
+          "id": "selfEvolvingAgent.mainView",
+          "name": "Project Assistant",
+          "icon": "resources/icon.svg",
+          "contextualTitle": "Project Assistant"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "selfEvolvingAgent.nav.ask",
+        "title": "Ask",
+        "category": "Project Assistant"
+      },
+      {
+        "command": "selfEvolvingAgent.nav.graph",
+        "title": "Graph",
+        "category": "Project Assistant"
+      },
+      {
+        "command": "selfEvolvingAgent.nav.improve",
+        "title": "Improve",
+        "category": "Project Assistant"
+      },
+      {
+        "command": "selfEvolvingAgent.start",
+        "title": "Open Project Graph",
+        "category": "Project Assistant",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "selfEvolvingAgent.openFullEditor",
+        "title": "Open Project Assistant",
+        "category": "Project Assistant"
+      },
+      {
+        "command": "selfEvolvingAgent.generateGraph",
+        "title": "Scan Project",
+        "category": "Project Assistant"
+      },
+      {
+        "command": "selfEvolvingAgent.debugReset",
+        "title": "Reset Workspace State (Debug)",
+        "category": "Project Assistant"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "selfEvolvingAgent.nav.ask",
+          "when": "view == selfEvolvingAgent.mainView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "selfEvolvingAgent.nav.graph",
+          "when": "view == selfEvolvingAgent.mainView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "selfEvolvingAgent.nav.improve",
+          "when": "view == selfEvolvingAgent.mainView",
+          "group": "navigation@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Project Assistant",
+      "properties": {
+        "selfEvolvingAgent.neo4j.uri": {
+          "type": "string",
+          "default": "bolt://localhost:7687",
+          "description": "Neo4j Bolt URI used by the managed backend."
+        },
+        "selfEvolvingAgent.neo4j.user": {
+          "type": "string",
+          "default": "neo4j",
+          "description": "Neo4j username used by the managed backend."
+        },
+        "selfEvolvingAgent.neo4j.database": {
+          "type": "string",
+          "default": "neo4j",
+          "description": "Neo4j database used for graph seeding and retrieval."
+        },
+        "selfEvolvingAgent.llm.provider": {
+          "type": "string",
+          "default": "openai",
+          "enum": [
+            "openai",
+            "local"
+          ],
+          "description": "LLM provider used by the managed backend."
+        },
+        "selfEvolvingAgent.llm.model": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "Agent LLM model used by the managed backend."
+        },
+        "selfEvolvingAgent.telemetry.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to write redacted agent telemetry to local workspace storage."
+        },
+        "selfEvolvingAgent.telemetry.externalJudgeEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow the background policy judge to send redacted turn telemetry to the configured external LLM."
+        },
+        "selfEvolvingAgent.graph.autoRefreshOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically refresh the knowledge graph when files are saved."
+        },
+        "selfEvolvingAgent.graph.jsonFileName": {
+          "type": "string",
+          "default": ".code-knowledge-graph.json",
+          "description": "Name of the JSON file written to the workspace root after graph generation."
+        },
+        "selfEvolvingAgent.graph.incrementalUpdates": {
+          "type": "boolean",
+          "default": true,
+          "description": "When enabled, file edits patch the code graph and Neo4j incrementally instead of requiring a full rescan. Disable to fall back to manual full scans only.",
+          "scope": "window"
+        },
+        "selfEvolvingAgent.useMockBackend": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, the extension serves mock data instead of calling the FastAPI backend. Useful for offline UI work."
+        },
+        "selfEvolvingAgent.backend.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "Base URL of the managed FastAPI backend after setup."
+        },
+        "selfEvolvingAgent.backend.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional absolute path to the Python interpreter used to run the backend. Leave empty to auto-detect (prefers backend/.venv, then system python)."
+        },
+        "selfEvolvingAgent.graph.useLsp": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use the Language Server to resolve cross-file calls, imports, and inheritance. Requires the appropriate language extension to be installed and active (e.g. Angular Language Service, Pylance, built-in TypeScript)."
+        },
+        "selfEvolvingAgent.graph.analysisDepth": {
+          "type": "string",
+          "default": "flow",
+          "enum": [
+            "structural",
+            "symbols",
+            "calls",
+            "framework",
+            "flow",
+            "security"
+          ],
+          "description": "Controls how much CodeGraph detail is generated. Use flow/security only when you need local control-flow and data-flow nodes because they can greatly increase graph size.",
+          "scope": "window"
+        },
+        "selfEvolvingAgent.graph.includeAnonymousFallbacks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include nodes that could not be auto-named from context (shown as <anonymous@L#>). Disable for a cleaner architectural view."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build:webview && npm run compile && npm run copy-assets",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build:webview": "cd webview && npm run build",
+    "dev:webview": "cd webview && npm run dev",
+    "copy-assets": "node scripts/copy-assets.js",
+    "build": "npm run compile && npm run copy-assets && npm run build:webview",
+    "package:vsix": "npm run build && npx @vscode/vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "18.x",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.9.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@types/sql.js": "^1.4.11",
+    "cose-base": "^2.2.0",
+    "cytoscape": "^3.29.2",
+    "cytoscape-fcose": "^2.2.0",
+    "layout-base": "^2.0.1",
+    "neo4j-driver": "^6.2.0",
+    "sql.js": "^1.14.1",
+    "tree-sitter-wasms": "^0.1.11",
+    "web-tree-sitter": "^0.22.6"
+  }
+}

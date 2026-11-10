@@ -1,0 +1,118 @@
+.logs-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.logs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.logs-header h2 {
+  font-size: 16px;
+  margin: 0;
+  color: var(--text-color);
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-btn {
+  background: var(--container-bg);
+  border: 1px solid var(--border-color);
+  color: var(--muted-text);
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-color);
+}
+
+.filter-btn.active {
+  background: var(--hover-bg);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.logs-table-container {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.logs-table th {
+  padding: 12px 15px;
+  background: var(--container-bg);
+  color: var(--muted-text);
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.logs-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-color);
+}
+
+.log-row:hover td {
+  background: var(--hover-bg);
+}
+
+.timestamp-col {
+  color: var(--primary-color);
+  font-family: monospace;
+}
+
+.status-pill {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.status-pill.success {
+  background: var(--container-bg);
+  color: var(--success-color);
+  border: 1px solid var(--success-color);
+}
+
+.status-pill.info {
+  background: var(--container-bg);
+  color: var(--muted-text);
+  border: 1px solid var(--muted-text);
+}
+
+.status-pill.warning {
+  background: var(--container-bg);
+  color: var(--warning-color);
+  border: 1px solid var(--warning-color);
+}
+
+.status-pill.error {
+  background: var(--container-bg);
+  color: var(--warning-color);
+  border: 1px solid var(--warning-color);
+}

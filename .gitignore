@@ -1,0 +1,32 @@
+# Node
+node_modules/
+webview/node_modules/
+
+# VS Code Extension Build
+out/
+dist/
+*.vsix
+.vscode-test/
+
+# Webview Build
+webview/dist/
+webview/coverage/
+
+# Misc
+.DS_Store
+*.log
+.env
+**/.env
+backend/.env
+
+# Python backend local/runtime artifacts
+backend/.venv/
+backend/.abkb/
+backend/**/__pycache__/
+backend/**/*.pyc
+*.diff
+.abkb
+.code-knowledge-graph.json
+.code-knowledge-graph.ledger.json
+.en2
+resources

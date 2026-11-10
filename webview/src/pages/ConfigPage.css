@@ -1,0 +1,206 @@
+.config-page {
+  height: 100vh;
+  min-height: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: clamp(16px, 4vw, 32px);
+}
+
+.config-page.embedded {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  justify-content: flex-start;
+}
+
+.config-panel {
+  width: min(760px, 100%);
+  margin: auto 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--container-bg);
+  padding: clamp(18px, 4vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.config-page.setup .config-panel {
+  width: min(520px, 100%);
+  text-align: center;
+}
+
+.config-page.setup .config-save {
+  align-self: center;
+}
+
+.config-page.embedded .config-panel {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.config-title-row {
+  display: block;
+}
+
+.config-title-row h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.config-title-row p {
+  margin: 0;
+  color: var(--muted-text);
+  line-height: 1.45;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.config-field span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-text);
+}
+
+.config-field input,
+.config-field select {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--vscode-editor-background, var(--input-bg));
+}
+
+.config-field input:focus,
+.config-field select:focus {
+  background: var(--vscode-editor-background, var(--input-bg));
+}
+
+.config-model-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.config-icon-btn {
+  width: 38px;
+  height: 42px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--secondary-button-bg);
+  color: var(--muted-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.config-icon-btn:hover:not(:disabled) {
+  color: var(--text-color);
+  background: var(--hover-bg);
+}
+
+.config-icon-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.config-secret-field {
+  width: 100%;
+}
+
+.field-hint {
+  margin: 0;
+  color: var(--muted-text);
+  font-size: 12px;
+}
+
+.config-feedback {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.config-feedback:empty {
+  display: none;
+}
+
+.config-error,
+.config-missing {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--warning-color);
+  background: var(--warning-bg);
+  color: var(--warning-color);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.config-save {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-save.ready {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--primary-foreground);
+}
+
+.config-save.ready:hover:not(:disabled),
+.config-save.ready:focus-visible {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: var(--primary-foreground);
+}
+
+.spinner-inline {
+  animation: spin 1s linear infinite;
+}
+
+.config-save .spinner-inline {
+  color: currentColor;
+  stroke: currentColor;
+}
+
+@media (max-width: 640px) {
+  .config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .config-save {
+    width: 100%;
+    justify-content: center;
+  }
+}

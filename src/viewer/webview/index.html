@@ -1,0 +1,1278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Graph</title>
+    <style>
+      :root {
+        --left-panel-collapsed-width: 0px;
+        --left-panel-min-width: 32px;
+        --left-panel-width: 300px;
+        --left-panel-max-width: 420px;
+        --map-bg: var(--vscode-editor-background, #0b0f14);
+        --map-surface: var(--vscode-sideBar-background, #121923);
+        --map-surface-2: var(--vscode-input-background, #172231);
+        --map-control-bg: var(--vscode-editor-background, var(--map-bg));
+        --map-border: var(--vscode-panel-border, #263241);
+        --map-border-strong: var(--vscode-focusBorder, #4f86c6);
+        --map-text: var(--vscode-foreground, #eef2f6);
+        --map-muted: var(--vscode-descriptionForeground, #a9b7c6);
+        --map-accent: var(--vscode-button-background, #4d8fd7);
+        --map-accent-hover: var(--vscode-button-hoverBackground, #5f9ce5);
+        --map-button-fg: var(--vscode-button-foreground, #ffffff);
+        --map-warning: var(--vscode-editorWarning-foreground, #ffd166);
+      }
+
+      * {
+        box-sizing: border-box;
+        scrollbar-color: var(
+            --vscode-scrollbarSlider-background,
+            rgba(121, 121, 121, 0.4)
+          )
+          transparent;
+        scrollbar-width: thin;
+      }
+
+      body *,
+      body *::before,
+      body *::after {
+        border-width: 0 !important;
+        box-shadow: none !important;
+        outline: 0 !important;
+      }
+
+      #status {
+        min-height: 24px;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: var(--map-bg);
+        color: var(--map-text);
+        font: 13px/1.4 var(--vscode-font-family, "Segoe UI", sans-serif);
+      }
+
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-track,
+      ::-webkit-scrollbar-track-piece,
+      ::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-button {
+        display: none;
+        width: 0;
+        height: 0;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(
+          --vscode-scrollbarSlider-background,
+          rgba(121, 121, 121, 0.4)
+        );
+        background-clip: content-box;
+        border: 2px solid transparent;
+        border-radius: 999px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(
+          --vscode-scrollbarSlider-hoverBackground,
+          rgba(100, 100, 100, 0.7)
+        );
+        background-clip: content-box;
+      }
+
+      ::-webkit-scrollbar-thumb:active {
+        background: var(
+          --vscode-scrollbarSlider-activeBackground,
+          rgba(191, 191, 191, 0.4)
+        );
+        background-clip: content-box;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      #toolbar {
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 48px;
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) auto auto;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 12px;
+        background: var(--map-surface);
+        border-bottom: 1px solid var(--map-border);
+        z-index: 50;
+      }
+
+      .toolbarGroup {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: 8px;
+      }
+
+      .searchGroup {
+        min-width: 0;
+      }
+
+      .actionsGroup {
+        justify-content: flex-end;
+      }
+
+      #searchBox {
+        width: 100%;
+        height: 32px;
+        min-width: 180px;
+      }
+
+      #toolbar input,
+      #toolbar select {
+        height: 32px;
+        padding: 0 10px;
+        background: var(--map-control-bg);
+        border: 1px solid var(--map-border);
+        border-radius: 5px;
+        color: var(--map-text);
+        outline: none;
+      }
+
+      #toolbar select {
+        width: 132px;
+      }
+
+      #toolbar input:focus,
+      #toolbar select:focus,
+      #toolbar button:focus-visible {
+        border-color: var(--map-border-strong);
+        box-shadow: 0 0 0 1px var(--map-border-strong);
+      }
+
+      #toolbar button {
+        height: 32px;
+        padding: 0 11px;
+        background: var(--map-accent);
+        border: 1px solid transparent;
+        border-radius: 5px;
+        color: var(--map-button-fg);
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      #toolbar button:hover:not(:disabled) {
+        background: var(--map-accent-hover);
+        color: var(--map-button-fg);
+        cursor: pointer;
+      }
+
+      #toolbar button:disabled {
+        background: color-mix(in srgb, var(--map-accent) 32%, transparent);
+        border-color: var(--map-border);
+        color: color-mix(in srgb, var(--map-button-fg) 58%, transparent);
+        cursor: not-allowed;
+      }
+
+      #toolbar .secondaryButton {
+        background: var(--map-accent);
+        border-color: transparent;
+        color: var(--map-button-fg);
+      }
+
+      #toolbar .secondaryButton:hover:not(:disabled) {
+        background: var(--map-accent-hover);
+        color: var(--map-button-fg);
+        cursor: pointer;
+      }
+
+      #mapSummary {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--map-muted);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .summaryPill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 68px;
+        justify-content: center;
+        border: 1px solid var(--map-border);
+        background: var(--map-surface-2);
+        border-radius: 999px;
+        padding: 4px 8px;
+      }
+
+      #leftPanel {
+        position: absolute;
+        top: 48px;
+        left: 0;
+        bottom: 24px;
+        width: var(--left-panel-width);
+        min-width: var(--left-panel-min-width);
+        max-width: var(--left-panel-max-width);
+        background: var(--map-surface);
+        border-right: 1px solid var(--map-border);
+        z-index: 20;
+        overflow: hidden;
+      }
+
+      #leftPanelContent {
+        height: 100%;
+        overflow: auto;
+        padding: 14px;
+      }
+
+      #leftPanelResizeHandle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 8px;
+        cursor: col-resize;
+        background: transparent;
+      }
+
+      #leftPanelResizeHandle:hover {
+        background: rgba(77, 143, 215, 0.18);
+      }
+
+      .sectionTitle {
+        margin: 0 0 10px;
+        color: var(--map-muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .sectionTitleRow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .sectionTitleRow .sectionTitle {
+        margin: 0;
+      }
+
+      .relationshipActions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .inspectorTextButton {
+        min-height: 22px;
+        padding: 2px 7px;
+        border-radius: 4px;
+        background: var(--map-accent);
+        color: var(--map-button-fg);
+        cursor: pointer;
+        font: inherit;
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .inspectorTextButton:hover {
+        background: var(--map-accent-hover);
+        color: var(--map-button-fg);
+        cursor: pointer;
+      }
+
+      .inspectorSection + .inspectorSection {
+        margin-top: 16px;
+      }
+
+      .relationshipChipList {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .filterItem {
+        min-height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 5px 7px;
+        background: var(--map-surface);
+        background: color-mix(
+          in srgb,
+          var(--map-surface) 72%,
+          var(--map-text) 8%
+        );
+        border-radius: 5px;
+        color: var(--map-text);
+        cursor: pointer;
+        line-height: 1.2;
+      }
+
+      .filterItem.active {
+        background: var(--map-accent);
+        color: var(--map-button-fg);
+      }
+
+      .filterItem:hover {
+        background: color-mix(
+          in srgb,
+          var(--map-surface) 68%,
+          var(--map-accent) 12%
+        );
+      }
+
+      .filterItem.active:hover {
+        background: var(--map-accent-hover);
+        color: var(--map-button-fg);
+      }
+
+      .filterItem input {
+        display: none;
+        accent-color: var(--map-accent);
+      }
+
+      .filterLabel {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .filterCount,
+      .legendCount {
+        color: var(--map-muted);
+        font-size: 11px;
+      }
+
+      .filterCount {
+        min-width: 22px;
+        padding: 1px 5px;
+        border-radius: 999px;
+        background: var(--map-bg);
+        text-align: center;
+      }
+
+      .filterItem.active .filterCount {
+        color: var(--map-button-fg);
+        background: color-mix(in srgb, var(--map-button-fg) 22%, transparent);
+      }
+      .filterSearch {
+        width: 100%;
+        min-height: 30px;
+        margin: 0 0 10px;
+        padding: 6px 8px;
+        border: 1px solid var(--map-border);
+        border-radius: 5px;
+        background: var(--map-bg);
+        color: var(--map-text);
+        font: inherit;
+        font-size: 12px;
+      }
+
+      .filterSearch::placeholder {
+        color: var(--map-muted);
+      }
+
+      .filterGroupList {
+        display: grid;
+        gap: 8px;
+      }
+
+      .filterGroup {
+        border-top: 1px solid color-mix(in srgb, var(--map-border) 72%, transparent);
+        padding-top: 7px;
+      }
+
+      .filterGroup:first-child {
+        border-top: 0;
+        padding-top: 0;
+      }
+
+      .filterGroup summary {
+        min-height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        color: var(--map-muted);
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .filterGroup summary::-webkit-details-marker {
+        color: var(--map-muted);
+      }
+
+      .filterGroup .relationshipChipList {
+        margin-top: 6px;
+      }
+
+      .filterGroupCount,
+      .filterAuto {
+        min-width: 22px;
+        padding: 1px 5px;
+        border-radius: 999px;
+        background: var(--map-bg);
+        color: var(--map-muted);
+        font-size: 10px;
+        text-align: center;
+      }
+
+      .filterAuto {
+        color: var(--map-text);
+        background: color-mix(in srgb, var(--map-accent) 22%, var(--map-bg));
+      }
+
+      .filterItem.autoEnabled {
+        outline: 1px solid color-mix(in srgb, var(--map-accent) 44%, transparent);
+      }
+
+      .filterItem.noData,
+      .filterItem.searchHidden,
+      .filterGroup.noData,
+      .filterGroup.searchHidden {
+        display: none;
+      }
+
+      .legendGrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .legendItem {
+        min-height: 28px;
+        display: grid;
+        grid-template-columns: 14px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        color: var(--map-text);
+      }
+
+      .legendColor {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        flex: 0 0 14px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+
+      .panelDivider {
+        display: none;
+        margin: 14px 0;
+        border: 0;
+        border-top: 1px solid var(--map-border);
+      }
+
+      #details {
+        min-height: 92px;
+        padding: 0;
+        overflow-wrap: anywhere;
+        background: transparent;
+        border: 1px solid var(--map-border);
+        border-radius: 6px;
+        color: var(--map-text);
+      }
+
+      #details.empty {
+        color: var(--map-muted);
+      }
+
+      .selectionEmpty {
+        color: var(--map-muted);
+        line-height: 1.45;
+      }
+
+      .selectionCard {
+        display: grid;
+        gap: 11px;
+      }
+
+      .fileStrip {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+      }
+
+      .fileMeta {
+        min-width: 0;
+        display: grid;
+        gap: 2px;
+        padding: 7px 8px;
+        border-radius: 5px;
+        background: var(--map-bg);
+      }
+
+      .fileMeta.compact {
+        min-width: 56px;
+        justify-items: start;
+      }
+
+      .fileMeta span {
+        color: var(--map-muted);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .fileMeta strong {
+        min-width: 0;
+        color: var(--map-text);
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.25;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .locationMeta {
+        grid-column: 1 / -1;
+      }
+
+      .locationMeta strong {
+        color: var(--map-muted);
+        font-family: var(--vscode-editor-font-family, Consolas, monospace);
+        font-size: 11px;
+        line-height: 1.45;
+        overflow: visible;
+        overflow-wrap: anywhere;
+        text-overflow: clip;
+        white-space: normal;
+      }
+
+      #graphContainer {
+        position: absolute;
+        left: var(--left-panel-width);
+        top: 48px;
+        right: 0;
+        bottom: 24px;
+        overflow: hidden;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 /
+            24px 24px,
+          linear-gradient(
+              90deg,
+              rgba(255, 255, 255, 0.035) 1px,
+              transparent 1px
+            )
+            0 0 / 24px 24px,
+          var(--map-bg);
+      }
+
+      #cy {
+        width: 100%;
+        height: 100%;
+      }
+
+      #status {
+        position: absolute;
+        left: var(--left-panel-width);
+        right: 0;
+        bottom: 0;
+        height: 24px;
+        min-height: 24px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        background: var(--map-surface);
+        border-top: 1px solid var(--map-border);
+        color: var(--map-muted);
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      body.left-panel-collapsed #leftPanel {
+        width: var(--left-panel-collapsed-width);
+        min-width: var(--left-panel-collapsed-width);
+        border-right: 0;
+      }
+
+      body.left-panel-collapsed #leftPanelContent,
+      body.left-panel-collapsed #leftPanelResizeHandle {
+        display: none;
+      }
+
+      body.left-panel-collapsed #graphContainer,
+      body.left-panel-collapsed #status {
+        left: var(--left-panel-collapsed-width);
+      }
+
+      @media (max-width: 900px) {
+        :root {
+          --left-panel-width: 260px;
+        }
+
+        #toolbar {
+          grid-template-columns: minmax(220px, 1fr) auto;
+        }
+
+        #mapSummary {
+          display: none;
+        }
+      }
+
+      @media (max-width: 620px) {
+        :root {
+          --left-panel-width: 220px;
+        }
+
+        #toolbar {
+          grid-template-columns: 1fr;
+          height: 88px;
+          align-content: center;
+        }
+
+        .actionsGroup {
+          justify-content: flex-start;
+          overflow-x: auto;
+          padding-bottom: 2px;
+        }
+
+        #leftPanel,
+        #graphContainer {
+          top: 88px;
+        }
+      }
+
+      @media (max-width: 460px) {
+        :root {
+          --left-panel-width: 180px;
+        }
+
+        #leftPanelContent {
+          padding: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body class="left-panel-collapsed">
+    <div id="toolbar">
+      <div class="toolbarGroup searchGroup">
+        <input
+          id="searchBox"
+          placeholder="Search all enabled graph items"
+          aria-label="Search Project Graph"
+        />
+        <button id="searchBtn">Search</button>
+      </div>
+      <div class="toolbarGroup actionsGroup">
+        <button
+          id="isolateBtn"
+          class="secondaryButton"
+          disabled
+          title="Focus on selected item"
+        >
+          Focus
+        </button>
+        <button id="fitBtn" class="secondaryButton" title="Fit graph to view">
+          Fit
+        </button>
+        <button id="resetBtn" class="secondaryButton" title="Show full map">
+          Reset
+        </button>
+        <select id="layoutSelect" aria-label="Map layout">
+          <option value="fcose">Force</option>
+          <option value="breadthfirst">Hierarchy</option>
+          <option value="cose">COSE</option>
+          <option value="concentric">Concentric</option>
+        </select>
+      </div>
+      <div id="mapSummary" aria-live="polite">
+        <span class="summaryPill"
+          ><strong id="summaryNodes">0</strong> nodes</span
+        >
+        <span class="summaryPill"
+          ><strong id="summaryEdges">0</strong> edges</span
+        >
+      </div>
+    </div>
+
+    <div id="leftPanel">
+      <div id="leftPanelContent">
+        <section class="inspectorSection">
+          <div class="sectionTitle">Selection</div>
+          <div id="details" class="empty">
+            <div class="selectionEmpty">
+              Select a node to inspect its name, line, and location.
+            </div>
+          </div>
+        </section>
+
+        <section class="inspectorSection">
+          <div class="sectionTitleRow">
+            <div class="sectionTitle">Filters</div>
+            <div class="relationshipActions">
+              <button
+                class="inspectorTextButton"
+                id="relationshipsAllBtn"
+                type="button"
+              >
+                All
+              </button>
+              <button
+                class="inspectorTextButton"
+                id="relationshipsNoneBtn"
+                type="button"
+              >
+                None
+              </button>
+            </div>
+          </div>
+          <div class="relationshipChipList">
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="CONTAINS" checked />
+              <span class="filterLabel">Contains</span>
+              <span class="filterCount" data-relationship-count="CONTAINS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="CALLS" />
+              <span class="filterLabel">Calls</span>
+              <span class="filterCount" data-relationship-count="CALLS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="IMPORTS_FROM" />
+              <span class="filterLabel">Imports</span>
+              <span class="filterCount" data-relationship-count="IMPORTS_FROM">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="EXTENDS" />
+              <span class="filterLabel">Extends</span>
+              <span class="filterCount" data-relationship-count="EXTENDS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="IMPLEMENTS" />
+              <span class="filterLabel">Implements</span>
+              <span class="filterCount" data-relationship-count="IMPLEMENTS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="INSTANTIATES" />
+              <span class="filterLabel">Instantiates</span>
+              <span class="filterCount" data-relationship-count="INSTANTIATES">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="DEEP_DEPENDENCIES" />
+              <span class="filterLabel">Deep Links</span>
+              <span class="filterCount" data-relationship-count="DEEP_DEPENDENCIES">0</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="inspectorSection">
+          <div class="sectionTitle">Evidence</div>
+          <div class="relationshipChipList">
+            <label class="filterItem">
+              <input id="preciseReferencesToggle" type="checkbox" />
+              <span class="filterLabel">Precise References</span>
+              <span class="filterCount">Off</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="HAS_OCCURRENCE" />
+              <span class="filterLabel">Occurrences</span>
+              <span class="filterCount" data-relationship-count="HAS_OCCURRENCE">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="DEFINES" />
+              <span class="filterLabel">Defines</span>
+              <span class="filterCount" data-relationship-count="DEFINES">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="DECLARES" />
+              <span class="filterLabel">Declares</span>
+              <span class="filterCount" data-relationship-count="DECLARES">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="REFERS_TO" />
+              <span class="filterLabel">Refers To</span>
+              <span class="filterCount" data-relationship-count="REFERS_TO">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="RESOLVES_TO" />
+              <span class="filterLabel">Resolves</span>
+              <span class="filterCount" data-relationship-count="RESOLVES_TO">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="REF_CALL" />
+              <span class="filterLabel">Call Sites</span>
+              <span class="filterCount" data-relationship-count="REF_CALL">0</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="inspectorSection">
+          <div class="sectionTitle">Code Details</div>
+          <div class="relationshipChipList">
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="HAS_PARAM" />
+              <span class="filterLabel">Params</span>
+              <span class="filterCount" data-relationship-count="HAS_PARAM">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="HAS_FIELD" />
+              <span class="filterLabel">Fields</span>
+              <span class="filterCount" data-relationship-count="HAS_FIELD">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="HAS_PROPERTY" />
+              <span class="filterLabel">Properties</span>
+              <span class="filterCount" data-relationship-count="HAS_PROPERTY">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="TYPE_OF" />
+              <span class="filterLabel">Types</span>
+              <span class="filterCount" data-relationship-count="TYPE_OF">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="RETURNS" />
+              <span class="filterLabel">Returns</span>
+              <span class="filterCount" data-relationship-count="RETURNS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="IMPORTS" />
+              <span class="filterLabel">Imports</span>
+              <span class="filterCount" data-relationship-count="IMPORTS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="EXPORTS" />
+              <span class="filterLabel">Exports</span>
+              <span class="filterCount" data-relationship-count="EXPORTS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="REEXPORTS" />
+              <span class="filterLabel">Reexports</span>
+              <span class="filterCount" data-relationship-count="REEXPORTS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="ALIASES" />
+              <span class="filterLabel">Aliases</span>
+              <span class="filterCount" data-relationship-count="ALIASES">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="DOCUMENTS" />
+              <span class="filterLabel">Docs</span>
+              <span class="filterCount" data-relationship-count="DOCUMENTS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="ANNOTATED_BY" />
+              <span class="filterLabel">Decorators</span>
+              <span class="filterCount" data-relationship-count="ANNOTATED_BY">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="HAS_TYPE_PARAM" />
+              <span class="filterLabel">Type Params</span>
+              <span class="filterCount" data-relationship-count="HAS_TYPE_PARAM">0</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="inspectorSection">
+          <div class="sectionTitle">Call Details</div>
+          <div class="relationshipChipList">
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="CALL_SITE_OF" />
+              <span class="filterLabel">Call Sites</span>
+              <span class="filterCount" data-relationship-count="CALL_SITE_OF">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="HAS_ARGUMENT" />
+              <span class="filterLabel">Arguments</span>
+              <span class="filterCount" data-relationship-count="HAS_ARGUMENT">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="RECEIVER_OF" />
+              <span class="filterLabel">Receivers</span>
+              <span class="filterCount" data-relationship-count="RECEIVER_OF">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="ARGUMENT_FLOWS_TO_PARAMETER" />
+              <span class="filterLabel">Arg Flow</span>
+              <span class="filterCount" data-relationship-count="ARGUMENT_FLOWS_TO_PARAMETER">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="RETURN_FLOWS_TO_CALLER" />
+              <span class="filterLabel">Return Flow</span>
+              <span class="filterCount" data-relationship-count="RETURN_FLOWS_TO_CALLER">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="OVERRIDES" />
+              <span class="filterLabel">Overrides</span>
+              <span class="filterCount" data-relationship-count="OVERRIDES">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="CALLS_OVERRIDE" />
+              <span class="filterLabel">Override Calls</span>
+              <span class="filterCount" data-relationship-count="CALLS_OVERRIDE">0</span>
+            </label>
+          </div>
+        </section>
+        <section class="inspectorSection">
+          <div class="sectionTitle">Framework</div>
+          <div class="relationshipChipList">
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="ROUTES_TO" />
+              <span class="filterLabel">Routes</span>
+              <span class="filterCount" data-relationship-count="ROUTES_TO">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="HANDLES" />
+              <span class="filterLabel">Handles</span>
+              <span class="filterCount" data-relationship-count="HANDLES">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="CALLS_SERVICE" />
+              <span class="filterLabel">Services</span>
+              <span class="filterCount" data-relationship-count="CALLS_SERVICE">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="QUERIES_TABLE" />
+              <span class="filterLabel">Queries</span>
+              <span class="filterCount" data-relationship-count="QUERIES_TABLE">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="USES_MODEL" />
+              <span class="filterLabel">Models</span>
+              <span class="filterCount" data-relationship-count="USES_MODEL">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="RENDERS" />
+              <span class="filterLabel">Renders</span>
+              <span class="filterCount" data-relationship-count="RENDERS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="USES_HOOK" />
+              <span class="filterLabel">Hooks</span>
+              <span class="filterCount" data-relationship-count="USES_HOOK">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="UPDATES_STATE" />
+              <span class="filterLabel">State</span>
+              <span class="filterCount" data-relationship-count="UPDATES_STATE">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="BINDS_TEMPLATE" />
+              <span class="filterLabel">Templates</span>
+              <span class="filterCount" data-relationship-count="BINDS_TEMPLATE">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="DEPENDS_ON" />
+              <span class="filterLabel">Depends</span>
+              <span class="filterCount" data-relationship-count="DEPENDS_ON">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="USED_BY" />
+              <span class="filterLabel">Roles</span>
+              <span class="filterCount" data-relationship-count="USED_BY">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="AFFECTS" />
+              <span class="filterLabel">Affects</span>
+              <span class="filterCount" data-relationship-count="AFFECTS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="IMPACT_PATH" />
+              <span class="filterLabel">Impact</span>
+              <span class="filterCount" data-relationship-count="IMPACT_PATH">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="CHANGES_PUBLIC_API" />
+              <span class="filterLabel">Public API</span>
+              <span class="filterCount" data-relationship-count="CHANGES_PUBLIC_API">0</span>
+            </label>
+          </div>
+        </section>
+        <section class="inspectorSection">
+          <div class="sectionTitle">Flow</div>
+          <div class="relationshipChipList">
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="CFG_NEXT" />
+              <span class="filterLabel">Control</span>
+              <span class="filterCount" data-relationship-count="CFG_NEXT">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="BRANCH_TRUE" />
+              <span class="filterLabel">True</span>
+              <span class="filterCount" data-relationship-count="BRANCH_TRUE">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="BRANCH_FALSE" />
+              <span class="filterLabel">False</span>
+              <span class="filterCount" data-relationship-count="BRANCH_FALSE">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="LOOP_BACK" />
+              <span class="filterLabel">Loop</span>
+              <span class="filterCount" data-relationship-count="LOOP_BACK">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="EXCEPTION_FLOW" />
+              <span class="filterLabel">Exception</span>
+              <span class="filterCount" data-relationship-count="EXCEPTION_FLOW">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="RETURNS_TO" />
+              <span class="filterLabel">Returns</span>
+              <span class="filterCount" data-relationship-count="RETURNS_TO">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="READS" />
+              <span class="filterLabel">Reads</span>
+              <span class="filterCount" data-relationship-count="READS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="WRITES" />
+              <span class="filterLabel">Writes</span>
+              <span class="filterCount" data-relationship-count="WRITES">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="ASSIGNS" />
+              <span class="filterLabel">Assigns</span>
+              <span class="filterCount" data-relationship-count="ASSIGNS">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="USES_VALUE" />
+              <span class="filterLabel">Uses</span>
+              <span class="filterCount" data-relationship-count="USES_VALUE">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="DEFINES_VALUE" />
+              <span class="filterLabel">Defines</span>
+              <span class="filterCount" data-relationship-count="DEFINES_VALUE">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="CONTROL_DEPENDS_ON" />
+              <span class="filterLabel">Control Dep</span>
+              <span class="filterCount" data-relationship-count="CONTROL_DEPENDS_ON">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="REACHING_DEF" />
+              <span class="filterLabel">Reaching Def</span>
+              <span class="filterCount" data-relationship-count="REACHING_DEF">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="FLOWS_TO" />
+              <span class="filterLabel">Flows</span>
+              <span class="filterCount" data-relationship-count="FLOWS_TO">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="RETURN_FLOWS_TO" />
+              <span class="filterLabel">Return Flow</span>
+              <span class="filterCount" data-relationship-count="RETURN_FLOWS_TO">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="PARAM_FLOWS_TO_ARG" />
+              <span class="filterLabel">Param Arg</span>
+              <span class="filterCount" data-relationship-count="PARAM_FLOWS_TO_ARG">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="ARG_FLOWS_TO_PARAM" />
+              <span class="filterLabel">Arg Param</span>
+              <span class="filterCount" data-relationship-count="ARG_FLOWS_TO_PARAM">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="FIELD_READ" />
+              <span class="filterLabel">Field Read</span>
+              <span class="filterCount" data-relationship-count="FIELD_READ">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="FIELD_WRITE" />
+              <span class="filterLabel">Field Write</span>
+              <span class="filterCount" data-relationship-count="FIELD_WRITE">0</span>
+            </label>
+            <label class="filterItem">
+              <input data-relationship-filter="true" type="checkbox" value="CAPTURES" />
+              <span class="filterLabel">Captures</span>
+              <span class="filterCount" data-relationship-count="CAPTURES">0</span>
+            </label>
+          </div>
+        </section>
+        <section class="inspectorSection">
+          <div class="sectionTitle">Legend</div>
+          <div class="legendGrid">
+            <div class="legendItem">
+              <div class="legendColor" style="background: #d9b24c"></div>
+              <span>Folder</span>
+              <span class="legendCount" data-node-count="Folder">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #4fb6a9"></div>
+              <span>File</span>
+              <span class="legendCount" data-node-count="File">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #a78bfa"></div>
+              <span>Class</span>
+              <span class="legendCount" data-node-count="Class">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #8ccb7e"></div>
+              <span>Method</span>
+              <span class="legendCount" data-node-count="Method">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #5dade2"></div>
+              <span>Interface</span>
+              <span class="legendCount" data-node-count="Interface">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #f59e72"></div>
+              <span>Function</span>
+              <span class="legendCount" data-node-count="Function">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #c6cbd3"></div>
+              <span>Symbol</span>
+              <span class="legendCount" data-node-count="Symbol">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #43c59e"></div>
+              <span>Definition</span>
+              <span class="legendCount" data-node-count="Definition">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #e3c567"></div>
+              <span>Declaration</span>
+              <span class="legendCount" data-node-count="Declaration">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #67b7f7"></div>
+              <span>Reference</span>
+              <span class="legendCount" data-node-count="Reference">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #d88cf6"></div>
+              <span>External</span>
+              <span class="legendCount" data-node-count="ExternalSymbol">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #4fa3d8"></div>
+              <span>Route</span>
+              <span class="legendCount" data-node-count="Route">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #4fa3d8"></div>
+              <span>Endpoint</span>
+              <span class="legendCount" data-node-count="Endpoint">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #e6b450"></div>
+              <span>Controller</span>
+              <span class="legendCount" data-node-count="Controller">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #58b482"></div>
+              <span>Service</span>
+              <span class="legendCount" data-node-count="Service">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #6d9de8"></div>
+              <span>Repository</span>
+              <span class="legendCount" data-node-count="Repository">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #b58ae2"></div>
+              <span>React Component</span>
+              <span class="legendCount" data-node-count="ReactComponent">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #b58ae2"></div>
+              <span>Angular Component</span>
+              <span class="legendCount" data-node-count="AngularComponent">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #d88a6a"></div>
+              <span>Hook</span>
+              <span class="legendCount" data-node-count="Hook">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #6d9de8"></div>
+              <span>Model</span>
+              <span class="legendCount" data-node-count="ORMModel">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #e3b65b"></div>
+              <span>Parameter</span>
+              <span class="legendCount" data-node-count="Parameter">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #55c7d6"></div>
+              <span>Field</span>
+              <span class="legendCount" data-node-count="Field">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #55c7d6"></div>
+              <span>Property</span>
+              <span class="legendCount" data-node-count="Property">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #a8c66c"></div>
+              <span>Constant</span>
+              <span class="legendCount" data-node-count="Constant">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #7ea7f5"></div>
+              <span>Import</span>
+              <span class="legendCount" data-node-count="Import">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #7ea7f5"></div>
+              <span>Export</span>
+              <span class="legendCount" data-node-count="Export">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #b792f6"></div>
+              <span>TypeAlias</span>
+              <span class="legendCount" data-node-count="TypeAlias">0</span>
+            </div>
+            <div class="legendItem">
+              <div class="legendColor" style="background: #b792f6"></div>
+              <span>Enum</span>
+              <span class="legendCount" data-node-count="Enum">0</span>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div id="leftPanelResizeHandle"></div>
+    </div>
+
+    <div id="graphContainer"><div id="cy"></div></div>
+    <div id="status">Waiting for Project Graph...</div>
+
+    <script src="cytoscape.min.js"></script>
+    <script src="layout-base.js"></script>
+    <script src="cose-base.js"></script>
+    <script src="cytoscape-fcose.js"></script>
+    <script src="graph-state.js"></script>
+    <script src="graph-style.js"></script>
+    <script src="graph-engine.js"></script>
+    <script src="graph-renderer.js"></script>
+    <script src="graph-ui.js"></script>
+    <script src="graph-viewer.js"></script>
+  </body>
+</html>
